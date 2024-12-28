@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Online Cloth Store</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .search-bar {
+            margin-top: 10px;
+        }
+
+        #searchInput, #categoryFilter, #subcategoryFilter {
+            padding: 5px;
+            margin: 5px;
+        }
+
+        .cart-icon {
+            margin-top: 10px;
+        }
+
+        .product-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+        }
+
+        .product-item {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .product-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 5px 10px;
+            margin-top: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        /* Cart Modal */
+        .cart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cart-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .product-item {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Simple Online Cloth Store</h1>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for clothes...">
+            <select id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="men">Men's Clothing</option>
+                <option value="women">Women's Clothing</option>
+                <option value="kids">Kids' Clothing</option>
+                <option value="skirts">Skirts</option>
+            </select>
+            <select id="subcategoryFilter" disabled>
+                <option value="">Select Subcategory</option>
+            </select>
+        </div>
+        <div class="cart-icon">
+            <span id="cartCount">0</span> items in cart
+            <button onclick="viewCart()">View Cart</button>
+        </div>
+    </header>
+
+    <div id="product-list" class="product-list">
+        <!-- Product items will be dynamically generated here -->
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="cart-modal">
+        <div class="cart-modal-content">
+            <h2>Your Shopping Cart</h2>
+            <div id="cartDetails"></div>
+            <button onclick="clearCart()">Clear Cart</button>
+            <h3>Total: $<span id="cartTotal">0</span></h3>
+            <button onclick="closeCart()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Sample Product Data with more items and subcategories
+        const products = [
+            { id: 1, name: "Green T-shirt ", price: 29.99, image: "https://tse2.mm.bing.net/th?id=OIP.ovJqFirhwwBGUQv8QKFKwQHaHa&pid=Api&P=0&h=180", category: "men", subcategory: "tshirt" },
+	    //{ id: 1, name: "Black T-shirt", price: 29.99, image: "tshirt.jpg", category: "men", subcategory: "tshirt" },
+	    { id: 1, name: "Red T-shirt", price: 29.99, image: "https://tse4.mm.bing.net/th?id=OIP.EGcVe2q1oeFJjObJ-hW9yQHaJ4&pid=Api&P=0&h=180", category: "men", subcategory: "tshirt" },
+            { id: 1, name: "Blue T-shirt", price: 29.99, image: "https://tse2.mm.bing.net/th?id=OIP.q9bKJ8Zxqexw8ZcSMT3OogHaHa&pid=Api&P=0&h=180", category: "men", subcategory: "tshirt" },
+            //{ id: 2, name: "Blue Jeans", price: 49.99, src: "bluejeans.jpg", category: "men", subcategory: "jeans" },
+            { id: 2, name: "Black Jeans", price: 49.99, image: "https://tse4.mm.bing.net/th?id=OIP.1TZwfxzhXTPfJ_AfEasvIgAAAA&pid=Api&P=0&h=180", category: "men", subcategory: "jeans" },
+           
+            { id: 3, name: " Pink Kurta set", price: 59.99, image: "https://tse2.mm.bing.net/th?id=OIP.Em3aEBt2-wU_4AxHPTw2DQHaJ4&pid=Api&P=0&h=180", category: "women", subcategory: "Kurtas" },
+            { id: 3, name: " Black Kurta set", price: 59.99, image: "https://tse1.mm.bing.net/th?id=OIP.868V86gucasXDoX5J9vtqAHaJQ&pid=Api&P=0&h=180", category: "women", subcategory: "Kurtas" },
+            { id: 4, name: "Yellow T-shirt", price: 19.99, image: "https://tse2.mm.bing.net/th?id=OIP.u-uYeG5LH_C-J-zTJ-K_vQHaHa&pid=Api&P=0&h=180", category: "kids", subcategory: "tshirt" },
+            { id: 4, name: "Black T-shirt", price: 19.99, image: "tshirt.jpg", category: "kids", subcategory: "tshirt" },
+                        { id: 5, name: "Black Skirt", price: 39.99, image: "blackskirt.jpg", category: "women", subcategory: "skirt" },
+            { id: 5, name: "White Skirt", price: 39.99, image: "whiteskirt.jpg", category: "women", subcategory: "skirt" },
+            { id: 5, name: "Brown Skirt", price: 39.99, image: "brownskirt.jpg", category: "women", subcategory: "skirt" },
+            { id: 5, name: "Grey Skirt", price: 39.99, image: "greyskirt.jpg", category: "women", subcategory: "skirt" },
+            { id: 5, name: "Pink Skirt", price: 39.99, image: "pinkskirt.jpg", category: "women", subcategory: "skirt" },
+            { id: 6, name: "Grey Hoodie", price: 34.99, image: "greyhoodie.jpg", category: "men", subcategory: "hoodie" },
+            { id: 6, name: "Black Hoodie", price: 34.99, image: "black hoodie.jpg", category: "men", subcategory: "hoodie" },
+            { id: 6, name: "Blue Hoodie", price: 34.99, image: "blue hoodie.jpg", category: "men", subcategory: "hoodie" },
+            { id: 6, name: "White Hoodie", price: 34.99, image: "white hoodie.jpg", category: "men", subcategory: "hoodie" },
+            { id: 6, name: "Brown Hoodie", price: 34.99, image: "brown hoodie.jpg", category: "men", subcategory: "hoodie" },
+            { id: 7, name: "Black Jacket", price: 79.99, image: "black jacket.jpg", category: "men", subcategory: "jacket" },
+            { id: 7, name: "Blue Jacket", price: 79.99, image: "blue jacket.jpg", category: "men", subcategory: "jacket" },
+            { id: 7, name: "White Jacket", price: 79.99, image: "white jacket.jpg", category: "men", subcategory: "jacket" },
+            { id: 7, name: "Grey Jacket", price: 79.99, image: "grey jacket.jpg", category: "men", subcategory: "jacket" },
+            { id: 7, name: "Denim Jacket", price: 79.99, image: "denim jacket.jpg", category: "men", subcategory: "jacket" },
+            { id: 8, name: "White Snekars", price: 59.99, image: "whitesneakers.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "Black Running Shoes", price: 69.99, image: "black running shoes.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "White Walking shoes", price: 79.99, image: "white walking shoes.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "Formal Derby Shoes", price: 59.99, image: "fromal derby shoes.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "Slip-on shoes", price: 87.99, image: "white walking shoes.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "Flip flops", price: 29.99, image: "flip flops.jpg", category: "men", subcategory: "Footware" },
+            { id: 8, name: "Victori One Shower Sliders", price: 99.99, image: "one shower sliders.jpg", category: "men", subcategory: "Footware" },
+            { id: 9, name: "White Croptop", price: 49.99, image: "white crop top.jpg", category: "women", subcategory: "crop tops" },
+            { id: 9, name: "Ribbed Fitted Top", price: 49.99, image: "croptop2.jpg", category: "women", subcategory: "crop tops" },
+            { id: 9, name: "Floral Print Relaxed Fit top", price: 69.99, image: "croptop3.jpg", category: "women", subcategory: "crop tops" },
+            { id: 9, name: "Boxy fit Crop top ", price: 49.99, image: "croptop4.jpg", category: "women", subcategory: "crop tops" },
+            { id: 9, name: "Stripped Off-shoulder Top", price: 34.99, image: "croptop5.jpg", category: "women", subcategory: "crop tops" },
+
+            { id: 10, name: "Mid-Top Lace-Up sneakers", price: 84.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "Footware" },
+            { id: 10, name:" Checked Slip-on shoes", price: 44.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "Footware" },
+            { id: 10, name: "Slip-on Flat Sandals", price: 84.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "Footware" },
+            { id: 10, name: "Victori one sliders", price: 84.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "Footware" },
+            { id: 10, name: "Knee-length Boots", price: 114.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "Footware" },
+            { id: 11, name: "White Plaid Shirt", price: 34.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "Formal shirts" },
+            { id: 11, name: "Black Plaid Shirt", price: 84.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "Formal shirts" },
+            { id: 11, name: "Silver Regular Fit Shirt", price: 43.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "Formal shirts" },
+            { id: 11, name: "Red Slim Fit Cutway Collar Shirt", price: 23.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "Formal shirts" },
+            { id: 11, name: "Slim FIt Checked shirt", price: 34.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "Formal shirts" },
+            { id: 12, name: "Boys Washed Denim Cargo Shorts", price: 14.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 12, name: "Boys Pull-on Woven Cargo Shorts", price: 34.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 12, name: "Boys High-Rise Regular Fit Short", price: 54.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 12, name: "GIrls Washed Denim Skirt", price: 25.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 12, name: "Girls Stripped Slim Fit Shorts", price: 24.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 12, name: "Girls Typographic Shorts", price: 34.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "shorts" },
+            { id: 14, name: "Pink T-shirt", price: 18.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "tshirt" },
+            { id: 16, name: "Leather Jacket", price: 99.99, image: "https://via.placeholder.com/200", category: "men", subcategory: "jacket" },
+            { id: 17, name: "Striped T-shirt", price: 22.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "tshirt" },
+            { id: 17, name: " Graphic Print Crew-Neck T-shirt", price: 22.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "tshirt" },
+            { id: 17, name: "Women Aster Oversized Fit Crew-Neck T-shirt", price: 22.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "tshirt" },
+            { id: 17, name: "Fitted V-neck T-shirt", price: 22.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "tshirt" },
+            { id: 17, name: "Women Round T-shirt", price: 22.99, image: "https://via.placeholder.com/200", category: "women", subcategory: "tshirt" },
+            { id: 18, name: "Girls Sling Clogs with Appliques", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+            { id: 18, name: "Girls sliders", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+            { id: 18, name: "Girls Slip-on Shoes with velcro strap", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+            { id: 18, name: " Boys Sling Clogs with Appliques", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+            { id: 18, name: "Boys sliders", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+            { id: 18, name: "Boys Slip-on Shoes with velcro strap", price: 19.99, image: "https://via.placeholder.com/200", category: "kids", subcategory: "Footware" },
+
+        ];
+
+        // Load cart from localStorage
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+        // Function to display products based on category and subcategory selection
+        function displayProducts() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const categoryFilter = document.getElementById("categoryFilter").value;
+            const subcategoryFilter = document.getElementById("subcategoryFilter").value;
+            const filteredProducts = products.filter(product => {
+	
+                // Filter by name, category, and subcategory
+                return (product.name.toLowerCase().includes(searchInput) &&
+                    (categoryFilter ? product.category === categoryFilter : true) &&
+                    (subcategoryFilter ? product.subcategory === subcategoryFilter : true));
+            });
+
+            const productList = document.getElementById("product-list");
+            productList.innerHTML = "";
+
+            if (filteredProducts.length === 0) {
+                productList.innerHTML = "<p>No products found</p>";
+            }
+
+            filteredProducts.forEach(product => {
+                const productElement = document.createElement("div");
+                productElement.classList.add("product-item");
+
+                productElement.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>$${product.price}</p>
+                `;
+
+                // Add to Cart button
+                productElement.innerHTML += `<button onclick="addToCart(${product.id})">Add to Cart</button>`;
+
+                productList.appendChild(productElement);
+            });
+        }
+
+        // Function to add item to cart
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const cartItem = cart.find(item => item.id === productId);
+            
+            if (cartItem) {
+                cartItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            localStorage.setItem("cart", JSON.stringify(cart));
+            updateCartCount();
+        }
+
+        // Function to update cart count in the header
+        function updateCartCount() {
+            document.getElementById("cartCount").textContent = cart.length;
+        }
+
+        // Function to view the cart
+        function viewCart() {
+            const cartModal = document.getElementById("cartModal");
+            const cartDetails = document.getElementById("cartDetails");
+            const cartTotal = document.getElementById("cartTotal");
+
+            cartDetails.innerHTML = "";
+            let total = 0;
+
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                cartDetails.innerHTML += `
+                    <p>${item.name} - $${item.price} x ${item.quantity} = $${item.price * item.quantity}</p>
+                    <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                `;
+            });
+
+            cartTotal.textContent = total.toFixed(2);
+            cartModal.style.display = "flex";
+        }
+
+        // Function to update item quantity in cart
+        function updateQuantity(productId, change) {
+            const cartItem = cart.find(item => item.id === productId);
+            if (cartItem) {
+                cartItem.quantity += change;
+                if (cartItem.quantity <= 0) {
+                    cart = cart.filter(item => item.id !== productId);
+                }
+                localStorage.setItem("cart", JSON.stringify(cart));
+                displayProducts();
+                viewCart();
+            }
+        }
+
+        // Function to clear the cart
+        function clearCart() {
+            cart = [];
+            localStorage.setItem("cart", JSON.stringify(cart));
+            viewCart();
+        }
+
+        // Function to close cart modal
+        function closeCart() {
+            const cartModal = document.getElementById("cartModal");
+            cartModal.style.display = "none";
+        }
+
+        // Event listeners for category and subcategory selection
+        document.getElementById("categoryFilter").addEventListener("change", function() {
+            populateSubcategories();
+            displayProducts();
+        });
+
+        document.getElementById("subcategoryFilter").addEventListener("change", displayProducts);
+
+        // Populate subcategory options based on category selection
+        function populateSubcategories() {
+            const category = document.getElementById("categoryFilter").value;
+            const subcategoryFilter = document.getElementById("subcategoryFilter");
+
+            subcategoryFilter.innerHTML = "<option value=''>Select Subcategory</option>";
+
+            const subcategories = new Set();
+
+            products.forEach(product => {
+                if (product.category === category) {
+                    subcategories.add(product.subcategory);
+                }
+            });
+
+            subcategories.forEach(subcategory => {
+                const option = document.createElement("option");
+                option.value = subcategory;
+                option.textContent = subcategory.charAt(0).toUpperCase() + subcategory.slice(1);
+                subcategoryFilter.appendChild(option);
+            });
+
+            subcategoryFilter.disabled = subcategories.size === 0;
+        }
+
+        // Initial setup
+        populateSubcategories();
+        displayProducts();
+        updateCartCount();
+    </script>
+</body>
+</html>
